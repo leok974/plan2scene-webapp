@@ -1,53 +1,49 @@
 # Plan2Scene WebApp
 
-A Dockerized full-stack application that wraps the [Plan2Scene](https://github.com/3dlg-hcvc/plan2scene) inference pipeline to convert 2D floorplans into 3D textured meshes and walkthrough videos.
+A production-ready, Dockerized web application that wraps the [Plan2Scene](https://github.com/3dlg-hcvc/plan2scene) inference pipeline. It converts 2D floor plans into immersive 3D walkthroughs and textured meshes.
 
-## 🏗️ Architecture
+## 🏗️ Architecture & Engineering Decisions
 
-This project uses a **Hybrid Architecture** to handle heavy ML inference:
+To ensure robustness and ease of evaluation, this application utilizes a **Hybrid Architecture**:
 
-* **Frontend:** React (Vite) + Tailwind CSS. Uses polling to check job status.
-* **Backend:** FastAPI + Python `subprocess`. Implements an asynchronous job queue (BackgroundTasks) to prevent HTTP timeouts during long inference steps.
-* **Infrastructure:** Docker Compose with NVIDIA Runtime support.
+1.  **Containerization:** The entire stack (FastAPI + React) is Dockerized for consistent deployment.
+2.  **Asynchronous Processing:** Heavy inference tasks are offloaded to background workers to prevent HTTP timeouts.
+3.  **Dual-Mode Engine:**
+    * **`MODE=demo` (Default):** Runs a deterministic simulation of the pipeline. This allows you to evaluate the full UI/UX, API flow, and file handling without requiring an NVIDIA GPU or downloading 5GB of checkpoint weights.
+    * **`MODE=gpu`:** Configured to execute the actual `gnn_texture_prop.py` and rendering scripts when deployed on a host with the NVIDIA Container Toolkit.
 
-## 🚀 How to Run
+## 🚀 Quick Start (Demo Mode)
 
-### Option A: Demo Mode (Default - CPU Friendly)
+Prerequisites: Docker & Docker Compose.
 
-Designed for testing the UI/UX and API flow without requiring a GPU or the heavy Plan2Scene weights.
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/leok974/plan2scene-webapp.git
+    cd plan2scene-webapp
+    ```
 
-```bash
-docker compose up --build
-```
+2.  **Start the application:**
+    ```bash
+    docker compose up --build
+    ```
 
-* **Behavior:** Simulates the processing delay (4s) and returns pre-validated assets to demonstrate the pipeline stability.
-* **Access:**
-  - Frontend: http://localhost:5173
-  - Backend API: http://localhost:8000/docs
-
-### Option B: GPU Inference Mode (Production)
-
-Executes the actual `gnn_texture_prop.py` and rendering scripts.
-
-**Prerequisites:** NVIDIA GPU, NVIDIA Container Toolkit installed, and the `plan2scene` repo cloned as a sibling directory.
-
-```bash
-# 1. Clone the core repo sibling to this project
-git clone https://github.com/3dlg-hcvc/plan2scene.git ../plan2scene
-
-# 2. Run with GPU enabled
-MODE=gpu docker compose up --build
-```
+3.  **Access the App:**
+    * Frontend: `http://localhost:5173`
+    * Backend Docs: `http://localhost:8000/docs`
 
 ## 🛠️ Tech Stack
 
-* **Frontend:** React 18 + TypeScript + Vite + Tailwind CSS
-* **Backend:** FastAPI + Uvicorn + Pydantic
-* **API:** FastAPI
-* **Task Queue:** In-Memory (expandable to Redis/Celery)
-* **Containerization:** Docker & Nvidia-Docker
+* **Frontend:** React (TypeScript), Tailwind CSS v4, Framer Motion (Animations), Lucide React.
+* **Backend:** FastAPI, Python 3.9, Uvicorn.
+* **Infrastructure:** Docker Compose, Volume mapping for asset persistence.
 
-## 📁 Project Structure
+## ✨ Key Features
+* **Polished UI:** Dark mode architectural aesthetic with glassmorphism.
+* **Smart Downloads:** Implemented Blob-based downloading to force file saves (bypassing browser media playback).
+* **Interactive Status:** Real-time visual feedback of the inference pipeline steps.
+
+---
+*Built by Leo for the Plan2Scene Assessment.*
 
 ```
 plan2scene-webapp/
