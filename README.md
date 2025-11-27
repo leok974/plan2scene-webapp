@@ -6,9 +6,10 @@ A production-ready, Dockerized web application that wraps the [Plan2Scene](https
 
 ## 🎥 Demo Video
 
-[Watch the full walkthrough](./plan2scene.mp4)
+https://github.com/user-attachments/assets/94fddaa0-440b-40b6-a3d6-f6c680eecdce
 
 ## 🏗️ Architecture & Engineering Decisions
+
 
 To ensure robustness and ease of evaluation, this application utilizes a **Hybrid Architecture**:
 
