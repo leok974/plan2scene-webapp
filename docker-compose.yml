@@ -1,0 +1,35 @@
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/static:/app/static
+      - ./backend/uploads:/app/uploads
+      - ./backend/demo_assets:/app/demo_assets
+      - ../plan2scene:/app/plan2scene_core # Mount the repo
+    environment:
+      - MODE=${MODE:-demo}
+      - PLAN2SCENE_REPO=/app/plan2scene_core
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_BASE=http://localhost:8000
