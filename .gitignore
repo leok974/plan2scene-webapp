@@ -32,8 +32,6 @@ Thumbs.db
 # Uploads and jobs
 backend/uploads/
 backend/static/jobs/
-backend/demo_assets/*.mp4
-backend/demo_assets/*.glb
 
 # Logs
 *.log
