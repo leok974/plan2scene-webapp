@@ -49,6 +49,33 @@ Prerequisites: Docker & Docker Compose.
 * **Smart Downloads:** Implemented Blob-based downloading to force file saves (bypassing browser media playback).
 * **Interactive Status:** Real-time visual feedback of the inference pipeline steps.
 
+## 🚀 Advanced: GPU Mode (Real Plan2Scene Pipeline)
+
+To run the actual Plan2Scene inference pipeline with full GPU acceleration:
+
+**Prerequisites:** 
+- NVIDIA GPU with CUDA support
+- NVIDIA Container Toolkit installed
+- Docker & Docker Compose
+
+**Setup:**
+
+1.  **Clone the original Plan2Scene repository alongside this project:**
+    ```bash
+    cd ..
+    git clone https://github.com/3dlg-hcvc/plan2scene.git
+    ```
+
+2.  **Download the pretrained weights** as described in the [Plan2Scene README](https://github.com/3dlg-hcvc/plan2scene#download-trained-models).
+
+3.  **Set environment variables and start the stack:**
+    ```bash
+    cd plan2scene-webapp
+    MODE=gpu docker compose up --build
+    ```
+
+The backend will automatically detect GPU mode and execute the real `gnn_texture_prop.py` and rendering scripts instead of the demo simulation.
+
 ---
 *Built by Leo for the Plan2Scene Assessment.*
 
