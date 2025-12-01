@@ -246,7 +246,7 @@ class Plan2ScenePreprocessor:
     
     def _run_fill_room_embeddings(self, split: str, drop: float) -> PipelineStageResult:
         """Stage 1: Generate texture embeddings for rooms."""
-        script = self.scripts_root / "texture_gen" / "fill_room_embeddings.py"
+        script = self.scripts_root / "preprocessing" / "fill_room_embeddings.py"
         
         if not script.exists():
             return PipelineStageResult(
@@ -281,7 +281,7 @@ class Plan2ScenePreprocessor:
     
     def _run_vgg_crop_selector(self, split: str, drop: float) -> PipelineStageResult:
         """Stage 2: Select optimal texture crops using VGG."""
-        script = self.scripts_root / "texture_gen" / "vgg_crop_selector.py"
+        script = self.scripts_root / "crop_select" / "vgg_crop_selector.py"
         
         if not script.exists():
             return PipelineStageResult(
@@ -351,7 +351,7 @@ class Plan2ScenePreprocessor:
     
     def _run_seam_correct_textures(self, split: str, drop: float) -> PipelineStageResult:
         """Stage 4: Make textures tileable (seam correction)."""
-        script = self.scripts_root / "texture_gen" / "seam_correct_textures.py"
+        script = self.scripts_root / "postprocessing" / "seam_correct_textures.py"
         
         if not script.exists():
             return PipelineStageResult(
@@ -386,7 +386,7 @@ class Plan2ScenePreprocessor:
     
     def _run_embed_textures(self, split: str, drop: float) -> PipelineStageResult:
         """Stage 5: Embed textures into scene.json."""
-        script = self.scripts_root / "texture_gen" / "embed_textures.py"
+        script = self.scripts_root / "postprocessing" / "embed_textures.py"
         
         if not script.exists():
             return PipelineStageResult(

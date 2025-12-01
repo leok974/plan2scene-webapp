@@ -41,3 +41,8 @@ yarn-error.log*
 
 # Docker
 .dockerignore
+
+# External repositories (should be cloned separately)
+plan2scene/
+r2v-to-plan2scene/
+raster-to-vector/
