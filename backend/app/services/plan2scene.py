@@ -339,7 +339,8 @@ class Plan2SceneEngine:
                 scene_json_path,
                 house_id,
                 split="test",
-                drop=0.0
+                drop=0.0,
+                job_id=job_id
             )
             
             if not pipeline_result.success:

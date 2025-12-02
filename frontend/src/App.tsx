@@ -81,7 +81,11 @@ const App: React.FC = () => {
                 {/* Pipeline Mode Badge */}
                 {config && (
                     <div className="flex justify-center mb-4">
-                        <PipelineModeBadge mode={config.mode} pipelineMode={config.pipeline_mode} />
+                        <PipelineModeBadge 
+                            mode={config.mode} 
+                            pipelineMode={config.pipeline_mode}
+                            gpuEnabled={config.gpu_enabled}
+                        />
                     </div>
                 )}
 

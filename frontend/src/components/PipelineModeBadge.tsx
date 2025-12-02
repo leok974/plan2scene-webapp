@@ -4,9 +4,10 @@ import { Cpu, Zap, Sparkles } from "lucide-react";
 interface PipelineModeBadgeProps {
     mode: string;
     pipelineMode: string;
+    gpuEnabled?: boolean;
 }
 
-const PipelineModeBadge: React.FC<PipelineModeBadgeProps> = ({ mode, pipelineMode }) => {
+const PipelineModeBadge: React.FC<PipelineModeBadgeProps> = ({ mode, pipelineMode, gpuEnabled = true }) => {
     const getBadgeConfig = () => {
         if (mode === "demo") {
             return {
@@ -16,10 +17,21 @@ const PipelineModeBadge: React.FC<PipelineModeBadgeProps> = ({ mode, pipelineMod
             };
         }
         
+        // CPU Fallback Mode
+        if (mode === "gpu" && !gpuEnabled) {
+            return {
+                label: pipelineMode === "full" 
+                    ? "CPU Mode: Full R2V + Plan2Scene Pipeline" 
+                    : "CPU Mode: Preprocessed (Rent3D++)",
+                icon: Cpu,
+                colors: "bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/50 text-amber-300"
+            };
+        }
+        
         if (mode === "gpu" && pipelineMode === "full") {
             return {
                 label: "GPU Mode: Full R2V + Plan2Scene Pipeline",
-                icon: Cpu,
+                icon: Zap,
                 colors: "bg-gradient-to-r from-purple-500/20 to-blue-500/20 border-purple-500/50 text-purple-300"
             };
         }

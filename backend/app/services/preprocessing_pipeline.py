@@ -17,6 +17,7 @@ from dataclasses import dataclass
 
 from app.config import settings
 from app.services.plan2scene_commands import run_plan2scene_command, Plan2SceneCommandError
+from app.jobs import update_job
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +161,8 @@ class Plan2ScenePreprocessor:
         scene_json_path: Path,
         house_id: str,
         split: str = "test",
-        drop: float = 0.0
+        drop: float = 0.0,
+        job_id: Optional[str] = None
     ) -> FullPipelineResult:
         """
         Execute the complete Plan2Scene preprocessing pipeline.
@@ -213,6 +215,8 @@ class Plan2ScenePreprocessor:
                 logger.info(f"Copied scene.json to {arch_scene_json}")
             
             # Stage 1: Fill room embeddings
+            if job_id:
+                update_job(job_id, current_stage="room_embeddings")
             stage_result = self._run_fill_room_embeddings(split, drop, custom_data_paths)
             result.stage_results.append(stage_result)
             if not stage_result.success:
@@ -221,6 +225,8 @@ class Plan2ScenePreprocessor:
                 return result
             
             # Stage 2: VGG crop selection
+            if job_id:
+                update_job(job_id, current_stage="vgg_crop_selection")
             stage_result = self._run_vgg_crop_selector(split, drop, custom_data_paths)
             result.stage_results.append(stage_result)
             if not stage_result.success:
@@ -229,6 +235,8 @@ class Plan2ScenePreprocessor:
                 return result
             
             # Stage 3: GNN texture propagation
+            if job_id:
+                update_job(job_id, current_stage="texture_propagation")
             stage_result = self._run_gnn_texture_prop(split, drop, custom_data_paths)
             result.stage_results.append(stage_result)
             if not stage_result.success:
@@ -237,6 +245,8 @@ class Plan2ScenePreprocessor:
                 return result
             
             # Stage 4: Seam correction
+            if job_id:
+                update_job(job_id, current_stage="seam_correction")
             stage_result = self._run_seam_correct_textures(split, drop)
             result.stage_results.append(stage_result)
             if not stage_result.success:
@@ -245,6 +255,8 @@ class Plan2ScenePreprocessor:
                 return result
             
             # Stage 5: Embed textures
+            if job_id:
+                update_job(job_id, current_stage="texture_embedding")
             stage_result = self._run_embed_textures(split, drop, custom_data_paths)
             result.stage_results.append(stage_result)
             if not stage_result.success:
@@ -257,13 +269,15 @@ class Plan2ScenePreprocessor:
             if embedded_scene_json.exists():
                 result.final_scene_json = embedded_scene_json
             
-            # Stage 6: Rendering
+            # Stage 6: Rendering (optional - requires render.json config)
+            if job_id:
+                update_job(job_id, current_stage="rendering")
             stage_result = self._run_rendering(split, drop, custom_data_paths)
             result.stage_results.append(stage_result)
             if not stage_result.success:
-                result.failed_stage = stage_result.stage_name
-                result.error_message = stage_result.error_message
-                return result
+                # Rendering is optional - log warning but don't fail the pipeline
+                logger.warning(f"Stage rendering failed (optional): {stage_result.error_message}")
+                logger.warning("Continuing without PNG renders - scene.json with textures is complete")
             
             # Collect rendered outputs
             renders_dir = dirs["renders"]
@@ -635,7 +649,8 @@ class Plan2ScenePreprocessor:
         args = [
             "python", str(script),
             str(search_path),
-            "--drop", str(drop)
+            "--drop", str(drop),
+            "--scene-json"  # Process .scene.json files instead of .arch.json
         ]
         
         # Add custom data paths if provided

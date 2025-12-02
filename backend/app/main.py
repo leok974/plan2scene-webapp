@@ -47,7 +47,8 @@ def get_config():
     """Return current pipeline configuration for frontend."""
     return {
         "mode": settings.MODE,
-        "pipeline_mode": settings.PIPELINE_MODE
+        "pipeline_mode": settings.PIPELINE_MODE,
+        "gpu_enabled": settings.plan2scene_gpu_enabled
     }
 
 

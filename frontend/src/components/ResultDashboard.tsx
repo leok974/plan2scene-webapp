@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Download, Video, Box, Eye } from "lucide-react";
 import { cn } from "../lib/utils";
-import { JobStatusResponse } from "../api";
+import { JobStatusResponse, API_BASE } from "../api";
 
 interface ResultDashboardProps {
     job: JobStatusResponse;
@@ -10,7 +10,6 @@ interface ResultDashboardProps {
 
 const ResultDashboard: React.FC<ResultDashboardProps> = ({ job }) => {
     const [activeTab, setActiveTab] = useState<"video" | "model">("video");
-    const API_BASE = "http://localhost:8000";
     const videoUrl = job.video_url ? `${API_BASE}${job.video_url}` : "";
     const modelUrl = job.scene_url ? `${API_BASE}${job.scene_url}` : "";
     const downloadVideoUrl = `${API_BASE}/api/jobs/${job.job_id}/download/walkthrough`;
