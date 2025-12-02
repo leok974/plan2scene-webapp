@@ -2,9 +2,14 @@
 
 A production-ready, Dockerized web application that wraps the [Plan2Scene](https://github.com/3dlg-hcvc/plan2scene) inference pipeline. It converts 2D floor plans into immersive 3D walkthroughs, textured meshes, and interactive 3D previews.
 
-![App Screenshot](./docs/assets/screenshot.png)
+<img width="1920" height="1080" alt="Screenshot 2025-12-02 130003" src="https://github.com/user-attachments/assets/8eaaf17c-ab0b-4797-b0fb-0fecabf97330" />
 
-> **📹 [Watch the full demo video](./docs/demo/plan2scene.mp4)** - See the complete workflow from floorplan upload to 3D walkthrough generation.
+
+> **📹 
+
+https://github.com/user-attachments/assets/a0c549fc-d6d7-4e59-9c18-4e7f964e96c7
+
+
 
 ## 🎯 Current Status: Fully Functional GPU Pipeline + 3D Viewer
 
