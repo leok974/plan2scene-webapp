@@ -17,13 +17,13 @@ const demoSteps = [
 ];
 
 const fullGpuSteps = [
-    { id: 1, label: "Vector → scene.json", key: "convert_r2v", icon: Scan },
-    { id: 2, label: "Room Embeddings", key: "fill_room_embeddings", icon: Layers },
-    { id: 3, label: "VGG Crop Selection", key: "vgg_crop_selector", icon: Grid3x3 },
-    { id: 4, label: "GNN Texture Propagation", key: "gnn_texture_prop", icon: Sparkles },
-    { id: 5, label: "Seam Correction", key: "seam_correct_textures", icon: Scissors },
-    { id: 6, label: "Texture Embedding", key: "embed_textures", icon: Image },
-    { id: 7, label: "Rendering", key: "rendering", icon: Video },
+    { id: 1, label: "Vector → scene.json", key: "convert_r2v", icon: Scan, delay: 0 },
+    { id: 2, label: "Room Embeddings", key: "fill_room_embeddings", icon: Layers, delay: 0 },
+    { id: 3, label: "VGG Crop Selection", key: "vgg_crop_selector", icon: Grid3x3, delay: 0 },
+    { id: 4, label: "GNN Texture Propagation", key: "gnn_texture_prop", icon: Sparkles, delay: 0 },
+    { id: 5, label: "Seam Correction", key: "seam_correct_textures", icon: Scissors, delay: 0 },
+    { id: 6, label: "Texture Embedding", key: "embed_textures", icon: Image, delay: 0 },
+    { id: 7, label: "Rendering", key: "rendering", icon: Video, delay: 0 },
 ];
 
 const ProcessingSteps: React.FC<ProcessingStepsProps> = ({ 
@@ -95,7 +95,7 @@ const ProcessingSteps: React.FC<ProcessingStepsProps> = ({
                                 className="flex items-center gap-4"
                             >
                                 <div
-                                    className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                                    className={`shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${
                                         isCompleted
                                             ? "bg-blue-500/20 border-2 border-blue-500"
                                             : isCurrent
@@ -152,9 +152,9 @@ const ProcessingSteps: React.FC<ProcessingStepsProps> = ({
                                 </div>
 
                                 {/* Progress bar */}
-                                <div className="flex-shrink-0 w-24 h-1 bg-slate-800 rounded-full overflow-hidden">
+                                <div className="shrink-0 w-24 h-1 bg-slate-800 rounded-full overflow-hidden">
                                     <motion.div
-                                        className="h-full bg-gradient-to-r from-blue-500 to-blue-400"
+                                        className="h-full bg-linear-to-r from-blue-500 to-blue-400"
                                         initial={{ width: "0%" }}
                                         animate={{
                                             width: isCompleted

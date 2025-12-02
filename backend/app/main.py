@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse
 from pathlib import Path
 from uuid import uuid4
 import logging
+import json
 
 from . import schemas
 from .jobs import create_job, get_job
@@ -137,3 +138,106 @@ async def download_scene(job_id: str):
         filename="plan2scene-model.glb",
         headers={"Content-Disposition": "attachment; filename=plan2scene-model.glb"}
     )
+
+
+@app.get("/api/jobs/{job_id}/scene", response_model=schemas.ScenePreviewResponse)
+def get_job_scene_preview(job_id: str) -> schemas.ScenePreviewResponse:
+    """
+    Return a simplified, frontend-friendly representation of the Plan2Scene output
+    for a given job. This does NOT expose textures, just room polygons + heights.
+    """
+    job_dir = JOBS_STATIC_DIR / job_id
+    
+    scene_path = (
+        job_dir
+        / "plan2scene_data"
+        / "processed"
+        / "vgg_crop_select"
+        / "test"
+        / "drop_0.0"
+        / "archs"
+        / "uploads.scene.json"
+    )
+    
+    if not scene_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Scene JSON not found for job {job_id}",
+        )
+    
+    data = json.loads(scene_path.read_text())
+    arch = data.get("scene", {}).get("arch", {})
+    rooms_raw = arch.get("rooms", [])
+    elements = arch.get("elements", [])
+    
+    # Build a mapping of roomId -> floor points
+    room_floors = {}
+    for elem in elements:
+        if elem.get("type") == "Floor" and "roomId" in elem and "points" in elem:
+            room_id = elem["roomId"]
+            # Points is a list containing a single polygon
+            points = elem["points"]
+            if isinstance(points, list) and len(points) > 0:
+                room_floors[room_id] = points[0] if isinstance(points[0], list) and isinstance(points[0][0], (list, float, int)) else points
+    
+    rooms: list[schemas.RoomPreview] = []
+    min_x = min_y = float("inf")
+    max_x = max_y = float("-inf")
+    
+    for room in rooms_raw:
+        room_id = room.get("id")
+        if not room_id or room_id not in room_floors:
+            continue
+        
+        # type
+        room_type = None
+        if isinstance(room.get("types"), list) and room["types"]:
+            room_type = str(room["types"][0])
+        
+        raw_poly = room_floors[room_id]
+        poly: list[list[float]] = []
+        
+        for pt in raw_poly:
+            # Points are [x, y, z] where y is vertical (0), we want x and z for 2D
+            if isinstance(pt, (list, tuple)) and len(pt) >= 3:
+                x, z = float(pt[0]), float(pt[2])
+                poly.append([x, z])
+                min_x = min(min_x, x)
+                min_y = min(min_y, z)
+                max_x = max(max_x, x)
+                max_y = max(max_y, z)
+            elif isinstance(pt, dict) and "x" in pt and "z" in pt:
+                x, z = float(pt["x"]), float(pt["z"])
+                poly.append([x, z])
+                min_x = min(min_x, x)
+                min_y = min(min_y, z)
+                max_x = max(max_x, x)
+                max_y = max(max_y, z)
+        
+        if not poly:
+            continue
+        
+        height = float(arch.get("defaults", {}).get("Wall", {}).get("height") or 2.8)
+        
+        rooms.append(
+            schemas.RoomPreview(
+                id=str(room_id),
+                type=room_type,
+                polygon=poly,
+                height=height,
+            )
+        )
+    
+    if not rooms:
+        raise HTTPException(
+            status_code=400,
+            detail=f"No rooms with polygons found for job {job_id}",
+        )
+    
+    if min_x == float("inf"):
+        min_x = min_y = 0.0
+        max_x = max_y = 1.0
+    
+    bbox = [min_x, min_y, max_x, max_y]
+    
+    return schemas.ScenePreviewResponse(job_id=job_id, rooms=rooms, bbox=bbox)

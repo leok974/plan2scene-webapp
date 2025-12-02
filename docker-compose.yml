@@ -21,7 +21,7 @@ services:
       - PLAN2SCENE_ROOT=/plan2scene
       - PLAN2SCENE_DATA_ROOT=${PLAN2SCENE_DATA_ROOT:-/plan2scene/data}
       - R2V_TO_PLAN2SCENE_ROOT=/r2v-to-plan2scene
-      - PLAN2SCENE_GPU_ENABLED=${PLAN2SCENE_GPU_ENABLED:-0}
+      - PLAN2SCENE_GPU_ENABLED=1
     deploy:
       resources:
         reservations:

@@ -649,8 +649,9 @@ class Plan2ScenePreprocessor:
         args = [
             "python", str(script),
             str(search_path),
-            "--drop", str(drop),
-            "--scene-json"  # Process .scene.json files instead of .arch.json
+            "--drop", str(drop)
+            # Note: --scene-json flag removed - scene.json files are already created by embed_textures
+            # The render_house_jsons script is only for PNG/video rendering which requires render.json
         ]
         
         # Add custom data paths if provided

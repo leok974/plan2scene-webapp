@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Download, Video, Box, Eye } from "lucide-react";
+import { Download, Video, Box, Eye, Layers } from "lucide-react";
 import { cn } from "../lib/utils";
 import { JobStatusResponse, API_BASE } from "../api";
+import JobSceneViewer3D from "./JobSceneViewer3D";
 
 interface ResultDashboardProps {
     job: JobStatusResponse;
 }
 
 const ResultDashboard: React.FC<ResultDashboardProps> = ({ job }) => {
-    const [activeTab, setActiveTab] = useState<"video" | "model">("video");
+    const [activeTab, setActiveTab] = useState<"video" | "model" | "preview">("preview");
     const videoUrl = job.video_url ? `${API_BASE}${job.video_url}` : "";
     const modelUrl = job.scene_url ? `${API_BASE}${job.scene_url}` : "";
     const downloadVideoUrl = `${API_BASE}/api/jobs/${job.job_id}/download/walkthrough`;
@@ -65,6 +66,18 @@ const ResultDashboard: React.FC<ResultDashboardProps> = ({ job }) => {
             {/* Tabs */}
             <div className="flex gap-2 mb-6">
                 <button
+                    onClick={() => setActiveTab("preview")}
+                    className={cn(
+                        "flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all",
+                        activeTab === "preview"
+                            ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20"
+                            : "bg-slate-900/60 text-slate-400 hover:bg-slate-800/60"
+                    )}
+                >
+                    <Layers className="w-5 h-5" />
+                    3D Preview
+                </button>
+                <button
                     onClick={() => setActiveTab("video")}
                     className={cn(
                         "flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all",
@@ -92,7 +105,11 @@ const ResultDashboard: React.FC<ResultDashboardProps> = ({ job }) => {
 
             {/* Content */}
             <div className="bg-slate-900/60 backdrop-blur-sm border border-slate-800 rounded-2xl overflow-hidden">
-                {activeTab === "video" ? (
+                {activeTab === "preview" ? (
+                    <div className="p-6">
+                        <JobSceneViewer3D jobId={job.job_id} />
+                    </div>
+                ) : activeTab === "video" ? (
                     <div className="aspect-video bg-black">
                         {videoUrl ? (
                             <video
