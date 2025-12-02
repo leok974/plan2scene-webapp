@@ -48,7 +48,8 @@ def run_plan2scene_command(
     cwd: Optional[Path] = None,
     env_overrides: Optional[Dict[str, str]] = None,
     check: bool = True,
-    capture_output: bool = True
+    capture_output: bool = True,
+    use_gpu: Optional[bool] = None
 ) -> CommandResult:
     """
     Execute a Plan2Scene-related command with proper environment setup.
@@ -59,6 +60,7 @@ def run_plan2scene_command(
         env_overrides: Additional environment variables to set
         check: Raise Plan2SceneCommandError on non-zero exit code
         capture_output: Capture stdout/stderr for logging
+        use_gpu: Whether to use GPU (defaults to settings.plan2scene_gpu_enabled)
     
     Returns:
         CommandResult with execution details
@@ -70,15 +72,19 @@ def run_plan2scene_command(
     if cwd is None:
         cwd = settings.PLAN2SCENE_ROOT
     
-    # Build environment with PYTHONPATH for Plan2Scene code
+    # Default use_gpu from config if not specified
+    if use_gpu is None:
+        use_gpu = settings.plan2scene_gpu_enabled
+    
+    # 🔑 CRITICAL: Inherit environment from parent process (including PYTHONPATH set in Dockerfile)
     import os
     env = os.environ.copy()
     
-    # Add Plan2Scene code/src to PYTHONPATH
-    pythonpath_entries = [str(settings.plan2scene_code_root)]
-    if "PYTHONPATH" in env:
-        pythonpath_entries.append(env["PYTHONPATH"])
-    env["PYTHONPATH"] = os.pathsep.join(pythonpath_entries)
+    # CPU fallback: Hide GPUs from PyTorch if GPU is disabled
+    if not use_gpu:
+        env["CUDA_VISIBLE_DEVICES"] = ""
+        env["FORCE_CPU"] = "1"
+        logger.info("CPU fallback mode enabled: hiding GPUs from PyTorch")
     
     # Apply any user-provided environment overrides
     if env_overrides:
@@ -87,7 +93,7 @@ def run_plan2scene_command(
     # Log the command
     logger.info(f"Executing Plan2Scene command: {' '.join(args)}")
     logger.info(f"Working directory: {cwd}")
-    logger.info(f"PYTHONPATH: {env['PYTHONPATH']}")
+    logger.info(f"PYTHONPATH: {env.get('PYTHONPATH', 'not set')}")
     
     try:
         result = subprocess.run(
@@ -137,7 +143,8 @@ def run_r2v_command(
     args: List[str],
     cwd: Optional[Path] = None,
     env_overrides: Optional[Dict[str, str]] = None,
-    check: bool = True
+    check: bool = True,
+    use_gpu: Optional[bool] = None
 ) -> CommandResult:
     """
     Execute an R2V-to-Plan2Scene command with proper environment setup.
@@ -149,6 +156,7 @@ def run_r2v_command(
         cwd: Working directory (defaults to R2V_TO_PLAN2SCENE_ROOT)
         env_overrides: Additional environment variables
         check: Raise error on non-zero exit
+        use_gpu: Whether to use GPU (defaults to settings.plan2scene_gpu_enabled)
     
     Returns:
         CommandResult with execution details
@@ -156,9 +164,19 @@ def run_r2v_command(
     if cwd is None:
         cwd = settings.R2V_TO_PLAN2SCENE_ROOT
     
+    # Default use_gpu from config if not specified
+    if use_gpu is None:
+        use_gpu = settings.plan2scene_gpu_enabled
+    
     # Build environment with R2V code path
     import os
     env = os.environ.copy()
+    
+    # CPU fallback: Hide GPUs from PyTorch if GPU is disabled
+    if not use_gpu:
+        env["CUDA_VISIBLE_DEVICES"] = ""
+        env["FORCE_CPU"] = "1"
+        logger.info("CPU fallback mode enabled (R2V): hiding GPUs from PyTorch")
     
     # Add R2V code/src to PYTHONPATH
     r2v_code_path = settings.R2V_TO_PLAN2SCENE_ROOT / "code" / "src"

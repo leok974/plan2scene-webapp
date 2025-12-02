@@ -1,34 +1,62 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Loader2, Cpu, Layers, Paintbrush, Box } from "lucide-react";
+import { Check, Loader2, Cpu, Layers, Paintbrush, Box, Scan, Grid3x3, Sparkles, Scissors, Image, Video } from "lucide-react";
 
 interface ProcessingStepsProps {
     status: string;
+    currentStage?: string;
+    failedStage?: string;
+    pipelineMode?: string;
 }
 
-const steps = [
+const demoSteps = [
     { id: 1, label: "Analyzing Geometry", icon: Layers, delay: 0 },
     { id: 2, label: "Rectifying Surfaces", icon: Cpu, delay: 1000 },
     { id: 3, label: "Synthesizing Textures", icon: Paintbrush, delay: 2000 },
     { id: 4, label: "Rendering 3D Scene", icon: Box, delay: 3000 },
 ];
 
-const ProcessingSteps: React.FC<ProcessingStepsProps> = ({ status }) => {
+const fullGpuSteps = [
+    { id: 1, label: "Vector → scene.json", key: "convert_r2v", icon: Scan },
+    { id: 2, label: "Room Embeddings", key: "fill_room_embeddings", icon: Layers },
+    { id: 3, label: "VGG Crop Selection", key: "vgg_crop_selector", icon: Grid3x3 },
+    { id: 4, label: "GNN Texture Propagation", key: "gnn_texture_prop", icon: Sparkles },
+    { id: 5, label: "Seam Correction", key: "seam_correct_textures", icon: Scissors },
+    { id: 6, label: "Texture Embedding", key: "embed_textures", icon: Image },
+    { id: 7, label: "Rendering", key: "rendering", icon: Video },
+];
+
+const ProcessingSteps: React.FC<ProcessingStepsProps> = ({ 
+    status, 
+    currentStage,
+    failedStage,
+    pipelineMode 
+}) => {
     const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+    const isGpuFull = pipelineMode === "full";
+    const steps = isGpuFull ? fullGpuSteps : demoSteps;
 
     useEffect(() => {
         if (status === "processing") {
-            // Reset steps
-            setCompletedSteps([]);
-            
-            // Animate steps completion
-            steps.forEach((step) => {
-                setTimeout(() => {
-                    setCompletedSteps((prev) => [...prev, step.id]);
-                }, step.delay);
-            });
+            if (!isGpuFull) {
+                // Demo mode: animate through steps
+                setCompletedSteps([]);
+                steps.forEach((step) => {
+                    setTimeout(() => {
+                        setCompletedSteps((prev) => [...prev, step.id]);
+                    }, step.delay);
+                });
+            } else {
+                // GPU mode: use currentStage from backend
+                if (currentStage) {
+                    const currentIndex = fullGpuSteps.findIndex(s => s.key === currentStage);
+                    if (currentIndex >= 0) {
+                        setCompletedSteps(fullGpuSteps.slice(0, currentIndex).map(s => s.id));
+                    }
+                }
+            }
         }
-    }, [status]);
+    }, [status, currentStage, isGpuFull]);
 
     if (status !== "processing") {
         return null;
@@ -46,7 +74,7 @@ const ProcessingSteps: React.FC<ProcessingStepsProps> = ({ status }) => {
                         <Cpu className="w-5 h-5 text-blue-400" />
                     </div>
                     <h3 className="text-lg font-semibold text-slate-200">
-                        Neural Processing Pipeline
+                        {isGpuFull ? "Full GPU Pipeline" : "Neural Processing Pipeline"}
                     </h3>
                 </div>
 
@@ -113,6 +141,7 @@ const ProcessingSteps: React.FC<ProcessingStepsProps> = ({ status }) => {
                                     >
                                         {isCompleted && "✓ "}
                                         {isCurrent && "> "}
+                                        {isGpuFull && `${index + 1}/7: `}
                                         {step.label}
                                         {isCurrent && (
                                             <span className="ml-2 text-blue-400 animate-pulse">
@@ -145,13 +174,18 @@ const ProcessingSteps: React.FC<ProcessingStepsProps> = ({ status }) => {
                 {/* Terminal-style log */}
                 <div className="mt-6 p-4 bg-slate-950/50 rounded-lg border border-slate-800">
                     <p className="text-xs font-mono text-slate-500">
-                        <span className="text-green-400">$</span> Running Plan2Scene v2.0 Neural
-                        Renderer
+                        <span className="text-green-400">$</span> Running Plan2Scene{" "}
+                        {isGpuFull ? "Full Pipeline" : "v2.0 Neural Renderer"}
                     </p>
                     {completedSteps.length > 0 && (
                         <p className="text-xs font-mono text-slate-500 mt-1">
                             <span className="text-blue-400">[INFO]</span> Processing with GPU
                             acceleration...
+                        </p>
+                    )}
+                    {isGpuFull && currentStage && (
+                        <p className="text-xs font-mono text-slate-400 mt-1">
+                            <span className="text-purple-400">[STAGE]</span> {currentStage}
                         </p>
                     )}
                 </div>

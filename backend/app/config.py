@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -23,8 +24,8 @@ class Settings(BaseSettings):
     # Raster-to-Vector repository path (optional, for future phase)
     RASTER_TO_VECTOR_ROOT: Path = Path(os.getenv("RASTER_TO_VECTOR_ROOT", "../raster-to-vector"))
     
-    # GPU availability flag
-    PLAN2SCENE_GPU_ENABLED: bool = os.getenv("PLAN2SCENE_GPU_ENABLED", "true").lower() == "true"
+    # GPU availability flag - set to False to force CPU fallback
+    plan2scene_gpu_enabled: bool = Field(True, env="PLAN2SCENE_GPU_ENABLED")
 
     class Config:
         env_file = ".env"

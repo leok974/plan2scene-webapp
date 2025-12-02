@@ -17,6 +17,7 @@ from enum import Enum
 
 from app.config import settings
 from app.services.plan2scene_commands import run_plan2scene_command, Plan2SceneCommandError
+from app.jobs import update_job
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +78,7 @@ class Plan2SceneEngine:
                 if self.pipeline_mode == "preprocessed":
                     return await self.run_gpu_pipeline_preprocessed(upload_path, output_dir)
                 elif self.pipeline_mode == "full":
-                    return await self.run_gpu_pipeline_full(upload_path, output_dir, r2v_annotation)
+                    return await self.run_gpu_pipeline_full(job_id, upload_path, output_dir, r2v_annotation)
                 else:
                     error_msg = f"Unknown pipeline mode: {self.pipeline_mode}"
                     logger.error(error_msg)
@@ -247,6 +248,7 @@ class Plan2SceneEngine:
     
     async def run_gpu_pipeline_full(
         self,
+        job_id: str,
         upload_path: Path,
         output_dir: Path,
         r2v_annotation: Optional[Path] = None
@@ -260,6 +262,7 @@ class Plan2SceneEngine:
         3. Copy final outputs to job output directory
         
         Args:
+            job_id: Unique job identifier (for progress tracking)
             upload_path: Path to uploaded floorplan image
             output_dir: Directory for final outputs
             r2v_annotation: Optional R2V annotation file (required for full pipeline)
@@ -304,6 +307,7 @@ class Plan2SceneEngine:
             
             # Stage 1: Convert R2V to scene.json
             logger.info("Stage 1: Converting R2V output to scene.json...")
+            update_job(job_id, current_stage="convert_r2v")
             r2v_output_dir = output_dir / "r2v_conversion"
             r2v_output_dir.mkdir(parents=True, exist_ok=True)
             
@@ -320,7 +324,15 @@ class Plan2SceneEngine:
             
             # Stage 2: Run full Plan2Scene preprocessing
             logger.info("Stage 2: Running full Plan2Scene preprocessing pipeline...")
-            preprocessor = Plan2ScenePreprocessor()
+            update_job(job_id, current_stage="preprocessing")
+            
+            # Create a job-specific working directory for Plan2Scene processing
+            # This avoids writing to the read-only mounted plan2scene repo
+            job_data_dir = output_dir / "plan2scene_data"
+            job_data_dir.mkdir(parents=True, exist_ok=True)
+            logger.info(f"Using job-specific data directory: {job_data_dir}")
+            
+            preprocessor = Plan2ScenePreprocessor(data_root=job_data_dir)
             
             pipeline_result = await asyncio.to_thread(
                 preprocessor.run_full_pipeline,
@@ -346,6 +358,7 @@ class Plan2SceneEngine:
             
             # Stage 3: Copy final outputs to job output directory
             logger.info("Stage 3: Copying final outputs to job directory...")
+            update_job(job_id, current_stage="finalizing")
             
             video_dest = output_dir / "walkthrough.mp4"
             model_dest = output_dir / "scene.glb"
@@ -391,14 +404,25 @@ class Plan2SceneEngine:
 
 
 # Legacy function for backward compatibility
-async def run_plan2scene(job_id: str, upload_path: Path, output_dir: Path):
+async def run_plan2scene(
+    job_id: str, 
+    upload_path: Path, 
+    output_dir: Path,
+    r2v_path: Optional[Path] = None
+):
     """
     Legacy entry point for Plan2Scene pipeline.
     
     Maintained for backward compatibility with existing worker.py.
+    
+    Args:
+        job_id: Unique job identifier
+        upload_path: Path to uploaded floorplan image
+        output_dir: Directory for job outputs
+        r2v_path: Optional path to R2V annotation file
     """
     engine = Plan2SceneEngine()
-    result = await engine.run_pipeline(job_id, upload_path, output_dir)
+    result = await engine.run_pipeline(job_id, upload_path, output_dir, r2v_path)
     
     if not result.success:
         raise Exception(result.error_message or "Pipeline failed")

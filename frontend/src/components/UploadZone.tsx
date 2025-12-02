@@ -1,14 +1,23 @@
 import React, { useCallback, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, FileImage, Sparkles } from "lucide-react";
+import { Upload, FileImage, Sparkles, FileCode } from "lucide-react";
 import { cn } from "../lib/utils";
 
 interface UploadZoneProps {
     onFileSelect: (file: File | null) => void;
     selectedFile: File | null;
+    onR2vFileSelect?: (file: File | null) => void;
+    r2vFile?: File | null;
+    showR2vUpload?: boolean;
 }
 
-const UploadZone: React.FC<UploadZoneProps> = ({ onFileSelect, selectedFile }) => {
+const UploadZone: React.FC<UploadZoneProps> = ({ 
+    onFileSelect, 
+    selectedFile,
+    onR2vFileSelect,
+    r2vFile,
+    showR2vUpload = false
+}) => {
     const [isDragging, setIsDragging] = useState(false);
 
     const handleDrop = useCallback(
@@ -37,12 +46,17 @@ const UploadZone: React.FC<UploadZoneProps> = ({ onFileSelect, selectedFile }) =
         onFileSelect(file);
     };
 
+    const handleR2vChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] ?? null;
+        onR2vFileSelect?.(file);
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="w-full"
+            className="w-full space-y-4"
         >
             <div
                 className={cn(
@@ -104,6 +118,53 @@ const UploadZone: React.FC<UploadZoneProps> = ({ onFileSelect, selectedFile }) =
                     />
                 </label>
             </div>
+
+            {/* R2V Annotation Upload (Advanced) */}
+            {showR2vUpload && (
+                <div className="border border-dashed border-slate-700/50 rounded-xl p-6 bg-slate-900/20">
+                    <div className="flex items-start gap-4">
+                        <div className="p-3 bg-purple-500/10 rounded-lg">
+                            <FileCode className="w-5 h-5 text-purple-400" />
+                        </div>
+                        <div className="flex-1 space-y-3">
+                            <div>
+                                <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                                    Advanced: R2V Annotation (Optional)
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-1">
+                                    Provide R2V vector annotation file for full pipeline processing
+                                </p>
+                            </div>
+                            <label className="block">
+                                <div className={cn(
+                                    "flex items-center gap-3 px-4 py-3 border rounded-lg transition-colors cursor-pointer",
+                                    r2vFile 
+                                        ? "border-purple-500/50 bg-purple-500/10" 
+                                        : "border-slate-700 bg-slate-800/50 hover:border-purple-500/50"
+                                )}>
+                                    {r2vFile ? (
+                                        <>
+                                            <FileCode className="w-4 h-4 text-purple-400" />
+                                            <span className="text-sm text-slate-300 font-mono">{r2vFile.name}</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload className="w-4 h-4 text-slate-400" />
+                                            <span className="text-sm text-slate-400">Choose R2V JSON file</span>
+                                        </>
+                                    )}
+                                </div>
+                                <input
+                                    type="file"
+                                    className="hidden"
+                                    accept=".json,.txt"
+                                    onChange={handleR2vChange}
+                                />
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            )}
         </motion.div>
     );
 };

@@ -4,13 +4,23 @@ import Layout from "./components/Layout";
 import UploadZone from "./components/UploadZone";
 import ProcessingSteps from "./components/ProcessingSteps";
 import ResultDashboard from "./components/ResultDashboard";
-import { createJob, getJobStatus, JobStatusResponse } from "./api";
+import PipelineModeBadge from "./components/PipelineModeBadge";
+import { createJob, getJobStatus, getConfig, JobStatusResponse, PipelineConfig } from "./api";
 
 const App: React.FC = () => {
     const [jobId, setJobId] = useState<string | null>(null);
     const [job, setJob] = useState<JobStatusResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [file, setFile] = useState<File | null>(null);
+    const [r2vFile, setR2vFile] = useState<File | null>(null);
+    const [config, setConfig] = useState<PipelineConfig | null>(null);
+
+    // Fetch pipeline config on mount
+    useEffect(() => {
+        getConfig()
+            .then(setConfig)
+            .catch((err) => console.error("Failed to fetch config:", err));
+    }, []);
 
     useEffect(() => {
         if (!jobId) return;
@@ -44,7 +54,7 @@ const App: React.FC = () => {
         if (!file) return;
         try {
             setLoading(true);
-            const res = await createJob(file);
+            const res = await createJob(file, r2vFile || undefined);
             setJobId(res.job_id);
             setJob({ job_id: res.job_id, status: res.status });
         } catch (err) {
@@ -59,12 +69,22 @@ const App: React.FC = () => {
         setJobId(null);
         setJob(null);
         setFile(null);
+        setR2vFile(null);
         setLoading(false);
     };
+
+    const showR2vUpload = config?.mode === "gpu" && config?.pipeline_mode === "full";
 
     return (
         <Layout>
             <div className="max-w-5xl mx-auto space-y-8">
+                {/* Pipeline Mode Badge */}
+                {config && (
+                    <div className="flex justify-center mb-4">
+                        <PipelineModeBadge mode={config.mode} pipelineMode={config.pipeline_mode} />
+                    </div>
+                )}
+
                 {/* Hero Section */}
                 {!jobId && !job && (
                     <div className="text-center mb-12">
@@ -84,7 +104,13 @@ const App: React.FC = () => {
                 {/* Upload Section */}
                 {!jobId && (
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        <UploadZone onFileSelect={handleFileSelected} selectedFile={file} />
+                        <UploadZone 
+                            onFileSelect={handleFileSelected} 
+                            selectedFile={file}
+                            onR2vFileSelect={setR2vFile}
+                            r2vFile={r2vFile}
+                            showR2vUpload={showR2vUpload}
+                        />
 
                         {file && (
                             <div className="flex justify-center">
@@ -103,7 +129,12 @@ const App: React.FC = () => {
 
                 {/* Processing Section */}
                 {job && job.status === "processing" && (
-                    <ProcessingSteps status={job.status} />
+                    <ProcessingSteps 
+                        status={job.status}
+                        currentStage={job.current_stage}
+                        failedStage={job.failed_stage}
+                        pipelineMode={config?.pipeline_mode}
+                    />
                 )}
 
                 {/* Error Section */}
@@ -111,7 +142,10 @@ const App: React.FC = () => {
                     <div className="text-center space-y-4">
                         <div className="p-6 bg-red-500/10 border border-red-500/30 rounded-xl">
                             <p className="text-red-400 font-medium">
-                                Processing failed. Please try again.
+                                {job.failed_stage 
+                                    ? `GPU pipeline failed during ${job.failed_stage}. See server logs for details.`
+                                    : "Processing failed. Please try again."
+                                }
                             </p>
                             {job.error && (
                                 <p className="text-sm text-red-400/70 mt-2 font-mono">

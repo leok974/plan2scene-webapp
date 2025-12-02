@@ -9,6 +9,7 @@ class Job:
     status: str = "processing"
     scene_url: Optional[str] = None
     video_url: Optional[str] = None
+    current_stage: Optional[str] = None
     created_at: datetime = field(default_factory=datetime.utcnow)
 
 
@@ -26,7 +27,12 @@ def get_job(job_id: str) -> Optional[Job]:
 
 
 def update_job(
-    job_id: str, *, status: Optional[str] = None, scene_url: Optional[str] = None, video_url: Optional[str] = None
+    job_id: str, 
+    *, 
+    status: Optional[str] = None, 
+    scene_url: Optional[str] = None, 
+    video_url: Optional[str] = None,
+    current_stage: Optional[str] = None
 ) -> Optional[Job]:
     job = _jobs.get(job_id)
     if not job:
@@ -37,4 +43,6 @@ def update_job(
         job.scene_url = scene_url
     if video_url is not None:
         job.video_url = video_url
+    if current_stage is not None:
+        job.current_stage = current_stage
     return job

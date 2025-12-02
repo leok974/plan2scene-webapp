@@ -4,16 +4,24 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "8002:8000"
     volumes:
       - ./backend/app:/app/app
       - ./backend/static:/app/static
       - ./backend/uploads:/app/uploads
       - ./backend/demo_assets:/app/demo_assets
-      - ../plan2scene:/app/plan2scene_core # Mount the repo
+      - ./backend/scripts:/app/scripts
+      - ./backend/tests:/app/tests
+      # Mount external repositories for GPU modes
+      - ../plan2scene:/plan2scene:ro
+      - ../r2v-to-plan2scene:/r2v-to-plan2scene:ro
     environment:
-      - MODE=${MODE:-demo}
-      - PLAN2SCENE_REPO=/app/plan2scene_core
+      - MODE=gpu
+      - PIPELINE_MODE=full
+      - PLAN2SCENE_ROOT=/plan2scene
+      - PLAN2SCENE_DATA_ROOT=${PLAN2SCENE_DATA_ROOT:-/plan2scene/data}
+      - R2V_TO_PLAN2SCENE_ROOT=/r2v-to-plan2scene
+      - PLAN2SCENE_GPU_ENABLED=${PLAN2SCENE_GPU_ENABLED:-0}
     deploy:
       resources:
         reservations:
@@ -27,9 +35,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "5173:5173"
+      - "5174:5173"
     volumes:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_BASE=http://localhost:8000
+      - VITE_API_BASE=http://localhost:8002

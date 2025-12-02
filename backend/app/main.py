@@ -42,17 +42,38 @@ def healthz():
     return {"status": "ok", "mode": settings.MODE}
 
 
+@app.get("/api/config")
+def get_config():
+    """Return current pipeline configuration for frontend."""
+    return {
+        "mode": settings.MODE,
+        "pipeline_mode": settings.PIPELINE_MODE
+    }
+
+
 @app.post("/api/convert", response_model=schemas.JobCreateResponse)
-async def create_conversion_job(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+async def create_conversion_job(
+    background_tasks: BackgroundTasks, 
+    file: UploadFile = File(...),
+    r2v_annotation: UploadFile = File(None)
+):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Only image uploads are supported.")
 
     job_id = uuid4().hex
     upload_path = UPLOAD_DIR / f"{job_id}_{file.filename}"
 
-    # Save file
+    # Save floorplan image file
     contents = await file.read()
     upload_path.write_bytes(contents)
+
+    # Save R2V annotation file if provided
+    r2v_path = None
+    if r2v_annotation and r2v_annotation.filename:
+        r2v_path = UPLOAD_DIR / f"{job_id}_r2v_annotation.txt"
+        r2v_contents = await r2v_annotation.read()
+        r2v_path.write_bytes(r2v_contents)
+        logger.info(f"R2V annotation file saved: {r2v_path}")
 
     # Create job entry
     create_job(job_id)
@@ -61,7 +82,7 @@ async def create_conversion_job(background_tasks: BackgroundTasks, file: UploadF
     job_output_dir = JOBS_STATIC_DIR / job_id
     job_output_dir.mkdir(parents=True, exist_ok=True)
     
-    background_tasks.add_task(process_job, job_id, upload_path, job_output_dir)
+    background_tasks.add_task(process_job, job_id, upload_path, job_output_dir, r2v_path)
 
     return schemas.JobCreateResponse(job_id=job_id, status="processing")
 
@@ -77,6 +98,7 @@ async def get_job_status(job_id: str):
         status=job.status,
         scene_url=job.scene_url,
         video_url=job.video_url,
+        current_stage=job.current_stage,
     )
 
 

@@ -12,3 +12,4 @@ class JobStatusResponse(BaseModel):
     status: str
     scene_url: Optional[str] = None
     video_url: Optional[str] = None
+    current_stage: Optional[str] = None
